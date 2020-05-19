@@ -2,10 +2,7 @@
 # make a list of enemies in class Enemy, append all instances of Enemy class
 # change all the codes to first check if there's enemy using len(Enemy.enemies)==0
 # then loop using for enemy in Enemy.enemies:
-# create surface
-# define function to check if object is on a surface, if not then fall to surface
-# define class Obstruction, then define sides/edges of the Obstruction
-# make player stand on obstruction and fall off the edge
+# make player hit side and bottom of obstructions
 # use mouse to make obstructions
 # create menu page
 # create catch the flag

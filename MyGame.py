@@ -412,5 +412,4 @@ while run:
         player.shootCount = 0
 
     redraw_game_window()
-    print(player.isJump)
 pygame.quit()

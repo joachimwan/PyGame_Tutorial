@@ -1,18 +1,17 @@
-# change the score to something else
-
-# make a list of enemies in class Enemy, append all instances of Enemy class
 # change all the codes to first check if there's enemy using len(Enemy.enemies)==0
-# then loop using for enemy in Enemy.enemies:
-# change enemy movement to be based on enemy.controls eg left right jump shoot to code AI
+# code AI to control enemies
 
 # make MP bar and charge bar
 # code shoot animation
 
-# create menu page: use mouse to make obstructions
-# show timer
-# create volume button
+# code drop item and item interaction
 
-# create you win or you lose page, restart game or terminate
+# create stage selection page
+# create volume button
+# fix restart button
+# create cloud blocks that can move up and down <-----------
+
+# code staircase steps <-------------
 
 import pygame
 import numpy as np
@@ -25,7 +24,7 @@ try:
     # %matplotlib inline
     import matplotlib.pyplot as plt
     import os
-    
+
     print("current working directory: ", os.getcwd())
     img = plt.imread('R1.png')
     # plt.imshow(img)
@@ -75,87 +74,93 @@ class Player:
                 pygame.image.load('L7.png'), pygame.image.load('L8.png'),
                 pygame.image.load('L9.png')]
     standing = pygame.image.load('standing.png')
-    
-    def __init__(self, x=50, y=0, width=64, height=64):
+
+    def __init__(self, x=50, y=200, width=64, height=64):
         # define the Player character
         self.x = x  # starting point x-coordinate
         self.y = y  # starting point y-coordinate
         self.width = width
         self.height = height
-        self.vel = 5
-        self.bounding_box = (self.x+12, self.y+12, 40, 55)
+        self.vel = 6
+        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
         self.color = (0, 0, 255)
         self.hit = False
         self.delayCount = 0
         self.HP0 = 100
         self.HP = self.HP0
-        
+        self.score = 0
+
         # to code shooting delay
         self.shootCount = 0
-        
+
         # to code jumping action
         self.isJump = False
         self.jumpCount0 = 11
         self.jumpCount = self.jumpCount0
-        
+
         # to code animation
         self.left = False
         self.right = False
         self.walkCount = 0
-        
+
     def draw(self, window):
         # use same image for 3 frames, then reset to first image
-        if self.walkCount >= np.size(self.walkRight)*3:
+        if self.walkCount >= np.size(self.walkRight) * 3:
             self.walkCount = 0
-        
+
         # define which image to draw at which count
         if self.left:
-            window.blit(self.walkLeft[self.walkCount//3], [self.x, self.y])
-            if keys[pygame.K_LEFT]:
+            window.blit(self.walkLeft[self.walkCount // 3], [self.x, self.y])
+            if keys[pygame.K_LEFT] and not game_over:
                 self.walkCount += 1
         elif self.right:
-            window.blit(self.walkRight[self.walkCount//3], [self.x, self.y])
-            if keys[pygame.K_RIGHT]:
+            window.blit(self.walkRight[self.walkCount // 3], [self.x, self.y])
+            if keys[pygame.K_RIGHT] and not game_over:
                 self.walkCount += 1
         else:
             window.blit(self.standing, [self.x, self.y])
-        
+
         # define delay for hit
         if 0 < self.delayCount <= 10:
             self.delayCount += 1
         else:
             self.hit = False
             self.delayCount = 0
-        
+
         # change color of bounding box
         if self.hit:
             self.color = (255, 0, 0)
         else:
             self.color = (0, 0, 255)
-            
-        self.bounding_box = (self.x+12, self.y+12, 40, 55)
+
+        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
         pygame.draw.rect(window, self.color, self.bounding_box, 2)
-        
+
         # draw HP bar above player
         pygame.draw.rect(window, (255, 255, 0),
-                         (int(self.x-0.5*(self.HP0-self.width)), int(self.bounding_box[1])-10, max(0, self.HP), 8), 0)
+                         (int(self.x - 0.5 * (self.HP0 - self.width)), int(self.bounding_box[1]) - 10, max(0, self.HP),
+                          8), 0)
         pygame.draw.rect(window, (0, 0, 0),
-                         (int(self.x-0.5*(self.HP0-self.width)), int(self.bounding_box[1])-10, self.HP0, 8), 2)
-        
+                         (int(self.x - 0.5 * (self.HP0 - self.width)), int(self.bounding_box[1]) - 10, self.HP0, 8), 2)
+
     def hit_action(self):
-        self.hit = True
-        self.delayCount = 1
-        self.HP -= 10
-        hit_sound.play()
-    
+        if self.hit is False:
+            self.HP -= 10
+            hit_sound.play()
+            self.hit = True
+            self.delayCount = 1
+
     def check_collision(self, box):
-        if box.bounding_box[0] < self.bounding_box[0] + self.bounding_box[2] and self.bounding_box[0] < box.bounding_box[0] + box.bounding_box[2]:
-            if box.bounding_box[1] < self.bounding_box[1] + self.bounding_box[3] and self.bounding_box[1] < box.bounding_box[1] + box.bounding_box[3]:
-                if box.bounding_box[1] < self.y + 12 + 55:  # solves tuple assignment bug
-                    return True
+        if box.bounding_box[0] < self.bounding_box[0] + self.bounding_box[2] and self.bounding_box[0] < \
+                box.bounding_box[0] + box.bounding_box[2]:
+            if box.bounding_box[1] < self.bounding_box[1] + self.bounding_box[3] and self.bounding_box[1] < \
+                    box.bounding_box[1] + box.bounding_box[3]:
+                return True
 
 
 class Enemy:
+    enemies = []
+
     # load images for animation from current working directory
     walkRight = [pygame.image.load('R1E.png'), pygame.image.load('R2E.png'),
                  pygame.image.load('R3E.png'), pygame.image.load('R4E.png'),
@@ -169,114 +174,178 @@ class Enemy:
                 pygame.image.load('L7E.png'), pygame.image.load('L8E.png'),
                 pygame.image.load('L9E.png'), pygame.image.load('L10E.png'),
                 pygame.image.load('L11E.png')]
-    
-    def __init__(self, x=100, y=355, width=64, height=64, x_range=500):
+
+    def __init__(self, x=100, y=355, width=64, height=64):
         # define the Player character
         self.x = x  # starting point x-coordinate
         self.y = y  # starting point y-coordinate
         self.width = width
         self.height = height
         self.vel = 3
-        self.bounding_box = (self.x+10, self.y, 50, 60)
+        self.bounding_box = (self.x + 10, self.y, 50, 60)
         self.color = (0, 0, 255)
         self.hit = False
         self.delayCount = 0
         self.HP0 = 100
         self.HP = self.HP0
-        
+        self.enemies.append(self)
+
+        # to code jumping action
+        self.isJump = False
+        self.jumpCount0 = 11
+        self.jumpCount = self.jumpCount0
+
         # to code animation
+        self.ctrl = {"up": False, "down": False, "left": False, "right": False, "A": False, "B": False}
         self.left = False
         self.right = True
         self.walkCount = 0
-        self.path = [x, x+x_range]
-        
+
     def draw(self, window):
         # automatically move the enemy
         self.move()
-        
+
         # use same image for 3 frames, then reset to first image
-        if self.walkCount >= np.size(self.walkRight)*3:
+        if self.walkCount >= np.size(self.walkRight) * 3:
             self.walkCount = 0
-        
+
         # define which image to draw at which count
         if self.left:
-            window.blit(self.walkLeft[self.walkCount//3], [self.x, self.y])
-            # self.walkCount += 1
+            window.blit(self.walkLeft[self.walkCount // 3], [self.x, self.y])
+            if self.ctrl["left"]:
+                self.walkCount += 1
         elif self.right:
-            window.blit(self.walkRight[self.walkCount//3], [self.x, self.y])
-            # self.walkCount += 1
-        
+            window.blit(self.walkRight[self.walkCount // 3], [self.x, self.y])
+            if self.ctrl["right"]:
+                self.walkCount += 1
+
         # define delay for hit
-        if 0 < self.delayCount <= 10:
+        if 0 < self.delayCount <= 6:
             self.delayCount += 1
         else:
             self.hit = False
             self.delayCount = 0
-        
+
         # change color of bounding box
         if self.hit:
             self.color = (255, 0, 0)
         else:
             self.color = (0, 0, 255)
-        
-        self.bounding_box = (self.x+10, self.y, 50, 60)
+
+        self.bounding_box = (self.x + 10, self.y, 50, 60)
         pygame.draw.rect(window, self.color, self.bounding_box, 2)
-        
+
         # draw HP bar above enemy
         pygame.draw.rect(window, (255, 0, 0),
-                         (int(self.x-0.5*(self.HP0-self.width)), int(self.bounding_box[1])-10, max(0, self.HP), 8), 0)
+                         (int(self.x - 0.5 * (self.HP0 - self.width)), int(self.bounding_box[1]) - 10, max(0, self.HP),
+                          8), 0)
         pygame.draw.rect(window, (0, 0, 0),
-                         (int(self.x-0.5*(self.HP0-self.width)), int(self.bounding_box[1])-10, self.HP0, 8), 2)
-        
+                         (int(self.x - 0.5 * (self.HP0 - self.width)), int(self.bounding_box[1]) - 10, self.HP0, 8), 2)
+
+    # program to control the enemy
     def move(self):
-        self.walkCount += 1
-        if self.left:
-            if self.x - self.vel >= self.path[0]:
-                self.x -= self.vel
-            else:
-                self.left = False
-                self.right = True
-        elif self.right:
-            if self.x + self.width + self.vel <= self.path[1]:
-                self.x += self.vel
-            else:
-                self.right = False
-                self.left = True
-    
+        # re-initialize all controls
+        self.ctrl = {"up": False, "down": False, "left": False, "right": False, "A": False, "B": False}
+
+        # to be replaced with AI that will decide enemy.ctrl
+        if self.HP > 0:
+            if self.walkCount//np.random.randint(1, 3) == 0:  # randomly jump
+                self.ctrl["up"] = True
+            if self.left:
+                if self.x - self.vel >= 0:
+                    self.ctrl["left"] = True
+                else:
+                    self.ctrl["right"] = True
+            elif self.right:
+                if self.x + self.width + self.vel <= surf_width:
+                    self.ctrl["right"] = True
+                else:
+                    self.ctrl["left"] = True
+
+        # define what happens when click left or click right
+        if self.ctrl["left"] and self.x - self.vel >= 0:
+            self.x -= self.vel
+            self.left = True
+            self.right = False
+        elif self.ctrl["right"] & (self.x + self.width + self.vel <= surf_width):
+            self.x += self.vel
+            self.right = True
+            self.left = False
+
+        if not self.isJump:
+            # check if player is on an obstruction
+            rel_pos = []
+            for box in Obstruction.boxes:
+                box.check_position(self)
+                rel_pos.append(box.rel_pos)
+            if min(rel_pos) > 0:
+                self.jumpCount = -3  # set to falling
+                self.isJump = True
+
+            if self.ctrl["up"] & (self.y + self.height + self.vel <= surf_height):
+                self.isJump = True
+        else:
+            if self.jumpCount >= 0:  # jumpCount is num of frames jumping
+                up = 1
+            else:  # player.jumpCount < 0
+                up = -1
+
+            distance = int(0.20 * self.jumpCount ** 2 * up)  # constant is jump height / num of frames
+            self.y -= distance
+            self.bounding_box = (self.x + 10, self.y, 50, 60)
+            if self.jumpCount < 0:
+                box_distance = []
+                for box in Obstruction.boxes:
+                    box.check_position(self)
+                    if box.rel_pos == 4:
+                        box_distance.append(
+                            box.bounding_box[1] - (self.bounding_box[1] + self.bounding_box[3] + distance))
+                box_distance2 = []
+                for dist in box_distance:
+                    if dist >= 0:
+                        box_distance2.append(dist)
+                if len(box_distance2) != 0:
+                    self.y += distance
+                    self.y += min(box_distance2)
+                    self.bounding_box = (self.x + 10, self.y, 50, 60)
+                    self.isJump = False
+                    self.jumpCount = self.jumpCount0
+            self.jumpCount -= 1
+
     def hit_action(self):
-        if self.hit is False:
-            self.HP -= 10
+        if self.hit is False and self.HP >= 0:
+            self.HP -= 20
             hit_sound.play()
-        self.hit = True
-        self.delayCount = 1
-        
-                
+            self.hit = True
+            self.delayCount = 1
+
+
 class Projectile:
     bullets = []
-    
+
     def __init__(self, x, y, facing, radius=5, color=(255, 0, 0)):
         self.x = x
         self.y = y
         self.radius = radius
         self.color = color
         self.facing = facing[1] - facing[0]  # 1 for right or -1 for left
-        self.vel = 8*self.facing
-        bullet_sound.play()
-    
+        self.vel = 12 * self.facing
+        self.bullets.append(self)
+
     # check bullet collision with any bounding box
     def check_collision(self, box):
         if box[0] < self.x + self.radius and self.x - self.radius < box[0] + box[2]:
             if box[1] < self.y + self.radius and self.y - self.radius < box[1] + box[3]:
                 return True
-    
+
     def draw(self, window):
         pygame.draw.circle(window, self.color, [int(self.x), int(self.y)], self.radius)
 
 
 class Obstruction:
     boxes = []
-    
-    def __init__(self, x, y, width, height, color=(255, 180, 0), transparent=False):
+
+    def __init__(self, x, y, width, height=10, color=(193, 154, 107), transparent=False):
         self.x = x
         self.y = y
         self.width = width
@@ -286,10 +355,14 @@ class Obstruction:
         self.boxes.append(self)
         self.rel_pos = 0  # relative position
         self.transparent = transparent
-    
+        
+        # to code animation
+        self.moveCount0 = 15
+        self.moveCount = self.moveCount0
+
     def draw(self, window):
         pygame.draw.rect(window, self.color, self.bounding_box, 0)
-    
+
     def check_position(self, player):
         if self.bounding_box[0] + self.bounding_box[2] <= player.bounding_box[0]:
             self.rel_pos = 2  # box is left of player
@@ -303,105 +376,233 @@ class Obstruction:
             self.rel_pos = 0  # player is standing on this box
 
 
+class Target:
+    targets = []
+    
+    def __init__(self, x, y, radius=5, color=(255, 0, 0)):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.bounding_box = (self.x-self.radius, self.y-self.radius, 2*self.radius, 2*self.radius)
+        self.color = color
+        self.targets.append(self)
+        
+    def draw(self, window):
+        pygame.draw.circle(window, self.color, [int(self.x), int(self.y)], self.radius)
+
+
 def redraw_game_window():
     window.blit(bg, [0, 0])  # set background to image from [0, 0] position
+    
     for box in Obstruction.boxes[1:]:  # draw boxes except ground
         if not box.transparent:
             box.draw(window)
+    
     player.draw(window)  # draw player
-    enemy.draw(window)  # draw enemy
-    pygame.draw.circle(window, (255, 0, 0), mouse_position, 2)  # draw mouse position
+    
+    for enemy in Enemy.enemies:
+        enemy.draw(window)  # draw enemy
+    
     for bullet in Projectile.bullets:  # draw bullets
         bullet.draw(window)
-    text = font.render(str(mouse_position) + " You win = " + str(player.check_collision(target)) + ". Reach the red dot!!", True, (0, 0, 0))  # todo change to show something else later
-    window.blit(text, [surf_width - text.get_width() - 5, 5])  # draw scoreboard
+        
+    for target in Target.targets:  # draw target
+        target.draw(window)
+    
+    font = pygame.font.SysFont(None, 30)  # create object with font style and font size
+    text = font.render(str(mouse_position), True, (0, 0, 0))
+    window.blit(text, [surf_width - text.get_width() - 5, surf_height - text.get_height() - 5])
+    text = font.render("Score = " + str(player.score), True, (0, 0, 0))
+    window.blit(text, [5, 5])
+    text = font.render(str(timer), True, (0, 0, 0))
+    window.blit(text, [int(surf_width/2 - text.get_width()/2), 5])
+    text = font.render("Restart", True, (180, 50, 0))
+    pygame.draw.rect(window, (180, 50, 0), (restart_button.x - 2, restart_button.y - 2,
+                                            restart_button.width + 4, restart_button.height + 4), 2)
+    window.blit(text, [restart_button.x, restart_button.y])
+    
+    pygame.draw.circle(window, (255, 0, 0), mouse_position, 2)  # draw mouse position
+    
+    if game_over:  # print this if game over
+        pygame.draw.rect(window, (255, 255, 255), (80, 80, surf_width - 160, surf_height - 160))
+        pygame.draw.rect(window, (0, 0, 0), (80, 80, surf_width - 160, surf_height - 160), 10)
+        font = pygame.font.SysFont(None, 30)
+        instruction = ["Intruction:",
+                       "1. You lose health if get hit by enemies.",
+                       "2. You kill enemy by shooting them.",
+                       "3. Killing enemies will spawn new ones, and you gain +1 score.",
+                       "4. Grab the big red dot to earn score too.",
+                       "5. Game ends when timer counts down to 0, or player dies.",
+                       "6. Click on 'Restart' to start playing!"]
+        text = []
+        for line in instruction:
+            text.append(font.render(line, True, (0, 0, 0)))
+        for line in range(len(text)):
+            window.blit(text[line], [90, 90 + line*int(text[line].get_height())])
+        font = pygame.font.SysFont(None, 100)
+        text = font.render("Score = " + str(player.score), True, (0, 0, 0))
+        window.blit(text, [int(surf_width/2 - text.get_width()/2), int(surf_height/2) + 20])
+    
     pygame.display.update()
 
 
-# main loop
-clock = pygame.time.Clock()
+def init_main():
+    Projectile.bullets = []
+    Enemy.enemies = []
+    
+    start_time = pygame.time.get_ticks()  # initialize start time
+    
+    player = Player()  # initialize player
+    for i in range(n_enemies):  # initialize enemy
+        Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height/2), ground.y - 64))
+    
+    return player, start_time
+
+
+# define stage obstructions
+field = 1
+if field == 1:  # JW's field
+    ground = Obstruction(0, 415, surf_width, 30, transparent=True)
+    # Obstruction(160, 70, 150, 20, color=(215, 215, 230))  # cloud 1
+    cloud = Obstruction(320, 140, 90, 20, color=(255, 0, 255))  # cloud 2
+    Obstruction(170, 180, 20, 235, color=(255, 125, 40))  # big tree trunk 2
+    Obstruction(100, 180, 150, 50, color=(110, 200, 60))  # big tree leaves 2
+    Obstruction(355, 235, 20, 180, color=(255, 125, 40))  # small tree trunk 1
+    Obstruction(330, 235, 80, 20, color=(0, 175, 0))  # small tree leaves 1
+    Obstruction(290, 255, 140, 20, color=(0, 150, 50))  # small tree leaves 2
+    Obstruction(270, 275, 180, 20, color=(0, 120, 40))  # small tree leaves 3
+    Obstruction(210, 345, 20, 70, color=(255, 125, 40))  # small tree trunk 4
+    Obstruction(160, 345, 130, 35, color=(90, 150, 0))  # small tree leaves 4
+    Obstruction(0, 110, 75, 305, color=(250, 220, 185))  # rock 0 left
+    Obstruction(770, 170, 80, 245, color=(250, 220, 185))  # rock 0 right
+    Obstruction(550, 230, 240, 185, color=(230, 200, 165))  # rock 1
+    Obstruction(490, 300, 130, 115, color=(185, 120, 90))  # rock 2
+    Obstruction(660, 100, 20, 315, color=(255, 125, 40))  # big tree trunk 2
+    Obstruction(600, 100, 150, 80, color=(144, 238, 144))  # big tree leaves 1
+    Obstruction(570, 360, 200, 55, color=(70, 70, 50))  # rock 3
+
+if field == 2:  # JunLi's field
+    ground = Obstruction(0, 415, surf_width, 30, transparent=True)
+    Obstruction(0, 350, 150, 10)  # level 1
+    Obstruction(250, 350, 350, 10)  # level 1
+    Obstruction(700, 350, 150, 10)  # level 1
+    Obstruction(100, 290, 350, 10)  # level 2
+    Obstruction(550, 290, 200, 10)  # level 2
+    Obstruction(0, 230, 330, 10)  # level 3
+    Obstruction(430, 230, 220, 10)  # level 3
+    Obstruction(750, 230, 100, 10)  # level 3
+    Obstruction(0, 170, 150, 10)  # level 4
+    Obstruction(250, 170, 250, 10)  # level 4
+    Obstruction(600, 170, 150, 10)  # level 4
+    Obstruction(150, 110, 550, 10)  # level 5
+    Obstruction(440, 180, 50, 50, (130, 0, 20))  # box 1
+    Obstruction(380, 360, 55, 55, (130, 0, 20))  # box 2
+    
+
+# Obstruction(460, 35, 100, 5, (255, 255, 255))
+# Obstruction(610, 35, 30, 5, (255, 255, 255))
+
+target = Target(750, 35)
+
+# draw restart button
 font = pygame.font.SysFont(None, 30)  # create object with font style and font size
-player = Player()  # initialize player
-enemy = Enemy()  # initialize enemy
-ground = Obstruction(0, 415, surf_width, 30, (0, 0, 0), True)
+text = font.render("Restart", True, (0, 0, 0))
+restart_button = Obstruction(5, surf_height-25, int(text.get_width()), int(text.get_height()), (0, 0, 0), True)
 
-box1 = Obstruction(380, 350, 70, 65, (255, 255, 0))
+# initialize player, enemies, and start time
+n_enemies = 1
+player, start_time = init_main()
 
-Obstruction(280, 285, 100, 20, (100, 255, 100))
-Obstruction(280, 210, 80, 20, (255, 50, 50))
-Obstruction(170, 135, 60, 10, (0, 0, 0), True)
-Obstruction(280, 80, 500, 5, (255, 180, 180))
-
-Obstruction(460, 285, 100, 5, (255, 0, 255))
-Obstruction(610, 285, 30, 5, (255, 0, 255))
-
-Obstruction(460, 220, 60, 20, (180, 125, 255))
-Obstruction(520, 210, 60, 20, (125, 0, 255))
-Obstruction(580, 200, 60, 20, (0, 180, 255))
-Obstruction(640, 190, 60, 20, (180, 125, 255))
-
-target = Obstruction(750, 35, 10, 10, (255, 0, 0))
-
+clock = pygame.time.Clock()
+timer = 120
+game_over = True
 run = True
 while run:
     clock.tick(27)  # set frame per second to max 27 (9 images * 3 frame/image)
     
     # define state of keyboard buttons
     keys = pygame.key.get_pressed()
-    
+
     # define state of mouse buttons and position
     mouse_buttons = pygame.mouse.get_pressed()
     mouse_position = pygame.mouse.get_pos()
-
+    
+    if restart_button.x <= mouse_position[0] <= restart_button.x + restart_button.width:
+        if restart_button.y <= mouse_position[1] <= restart_button.y + restart_button.height:
+            if mouse_buttons[0]:
+                game_over = False
+                player, start_time = init_main()
+    
+    if not game_over:
+        timer = 120 - round((pygame.time.get_ticks() - start_time)/1000)  # define time past since init_main
+    
     # define when to terminate loop, i.e. when click on CLOSE button (QUIT)
     for event in pygame.event.get():
         if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
             run = False
     
-    # update relative position of all obstructions
-    for box in Obstruction.boxes:
-        box.check_position(player)
-
-    # define what key-presses do, e.g. change x and y starting point
-    if keys[pygame.K_LEFT] and player.x - player.vel >= 0:
-        player.x -= player.vel
-        player.left = True
-        player.right = False
-    elif (keys[pygame.K_RIGHT]) & (player.x + player.width + player.vel <= surf_width):
-        player.x += player.vel
-        player.right = True
-        player.left = False
-    elif keys[pygame.K_DOWN]:
-        player.left = False
-        player.right = False
-        player.walkCount = 0
+    if field == 1:
+        if cloud.moveCount == cloud.moveCount0:
+            delta = 1
+        elif cloud.moveCount == -1 * cloud.moveCount0:
+            delta = -1
+        if cloud.moveCount >= 0:  # moveCount is num of frames moving
+            up = 1
+        else:
+            up = -1
+        distance = int(0.04 * cloud.moveCount ** 2 * up)  # constant is jump height / num of frames
+        cloud.check_position(player)
+        if cloud.rel_pos == 0:
+            player.y -= distance
+            player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
+        cloud.y -= distance
+        cloud.bounding_box = (cloud.x, cloud.y, cloud.width, cloud.height)
+        cloud.moveCount -= delta
         
+    
+    # define what key-presses do, e.g. change x and y starting point
+    if not game_over:
+        if keys[pygame.K_LEFT] and player.x - player.vel >= 0:
+            player.x -= player.vel
+            player.left = True
+            player.right = False
+        elif (keys[pygame.K_RIGHT]) & (player.x + player.width + player.vel <= surf_width):
+            player.x += player.vel
+            player.right = True
+            player.left = False
+        elif keys[pygame.K_DOWN]:
+            player.left = False
+            player.right = False
+            player.walkCount = 0
+
     if not player.isJump:
         # check if player is on an obstruction
         rel_pos = []
         for box in Obstruction.boxes:
+            box.check_position(player)
             rel_pos.append(box.rel_pos)
         if min(rel_pos) > 0:
             player.jumpCount = -3  # set to falling
             player.isJump = True
-        
-        if (keys[pygame.K_UP]) & (player.y + player.height + player.vel <= surf_height):
+
+        if (keys[pygame.K_UP]) & (player.y + player.height + player.vel <= surf_height) and not game_over:
             player.isJump = True
     else:
         if player.jumpCount >= 0:  # jumpCount is num of frames jumping
             up = 1
         else:  # player.jumpCount < 0
             up = -1
-        
-        distance = 0.20 * player.jumpCount ** 2 * up  # constant is jump height / num of frames
+
+        distance = int(0.20 * player.jumpCount ** 2 * up)  # constant is jump height / num of frames
         player.y -= distance
-        player.bounding_box = (player.x+12, player.y+12, 40, 55)
+        player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
         if player.jumpCount < 0:
             box_distance = []
             for box in Obstruction.boxes:
                 box.check_position(player)
                 if box.rel_pos == 4:
-                    box_distance.append(box.bounding_box[1] - (player.bounding_box[1] + player.bounding_box[3] + distance))
+                    box_distance.append(
+                        box.bounding_box[1] - (player.bounding_box[1] + player.bounding_box[3] + distance))
             box_distance2 = []
             for dist in box_distance:
                 if dist >= 0:
@@ -409,38 +610,67 @@ while run:
             if len(box_distance2) != 0:
                 player.y += distance
                 player.y += min(box_distance2)
+                player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
                 player.isJump = False
                 player.jumpCount = player.jumpCount0
         player.jumpCount -= 1
 
     # define what key-presses do to bullets, i.e. change x and y starting point
-    if keys[pygame.K_SPACE] and (player.left or player.right) and player.shootCount == 0:
-        Projectile.bullets.append(Projectile(player.x + (0.5 + (player.right - player.left)/5)*player.width,
-                                  player.y + player.height/2,
-                                  [player.left, player.right]))
+    if keys[pygame.K_SPACE] and (player.left or player.right) and player.shootCount == 0 and not game_over:
+        Projectile(player.x + (0.5 + (player.right - player.left) / 5) * player.width,
+                   player.y + player.height / 2, [player.left, player.right])
         player.shootCount += 1
+        bullet_sound.play()
 
-    for bullet in Projectile.bullets:
-        # check if bullet hits enemy
-        if bullet.check_collision(enemy.bounding_box):
-            Projectile.bullets.pop(Projectile.bullets.index(bullet))
-            if enemy.hit is False:
-                enemy.hit_action()
-        
-        elif 0 < bullet.x < surf_width:
-            bullet.x += bullet.vel
-        else:
-            Projectile.bullets.pop(Projectile.bullets.index(bullet))
-    
-    # check if player collides with enemy
-    if player.check_collision(enemy) and player.hit is False:
-        player.hit_action()
-    
     # define shooting delay
     if 0 < player.shootCount <= 10:
         player.shootCount += 1
     else:
         player.shootCount = 0
+
+    # check if bullet hits enemy
+    if len(Enemy.enemies) != 0:
+        for enemy in Enemy.enemies:
+            for bullet in Projectile.bullets:
+                if bullet.check_collision(enemy.bounding_box):
+                    Projectile.bullets.pop(Projectile.bullets.index(bullet))
+                    enemy.hit_action()
+                elif 0 < bullet.x < surf_width:
+                    bullet.x += bullet.vel/len(Enemy.enemies)
+                else:
+                    Projectile.bullets.pop(Projectile.bullets.index(bullet))
+    else:
+        for bullet in Projectile.bullets:
+            if 0 < bullet.x < surf_width:
+                bullet.x += bullet.vel
+            else:
+                Projectile.bullets.pop(Projectile.bullets.index(bullet))
+
+    # check if player collides with enemy
+    for enemy in Enemy.enemies:
+        if player.check_collision(enemy):
+            player.hit_action()
+    
+    # remove dead enemies and create new enemies
+    for enemy in Enemy.enemies:
+        if enemy.HP <= 0 and enemy.delayCount == 0:
+            Enemy.enemies.pop(Enemy.enemies.index(enemy))
+            player.score += 1
+            Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height / 3), ground.y - 64))
+            Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height / 3), ground.y - 64))
+    
+    # condition to game over: player die, or time's up
+    if player.HP <= 0 or timer <= 0:
+        game_over = True
+    
+    for target in Target.targets:
+        if player.check_collision(target):
+            Target.targets.pop(Target.targets.index(target))
+            player.score += 1
+            target = Target(x=np.random.randint(100, surf_width-100), y=np.random.randint(100, surf_height-100))
     
     redraw_game_window()
+    
+
+pygame.display.quit()
 pygame.quit()

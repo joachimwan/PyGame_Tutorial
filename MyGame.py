@@ -9,7 +9,6 @@
 # create stage selection page
 # create volume button
 # fix restart button
-# create cloud blocks that can move up and down <-----------
 
 # code staircase steps <-------------
 
@@ -102,6 +101,9 @@ class Player:
         self.left = False
         self.right = False
         self.walkCount = 0
+    
+    def update_bounding_box(self):
+        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
 
     def draw(self, window):
         # use same image for 3 frames, then reset to first image
@@ -133,7 +135,7 @@ class Player:
         else:
             self.color = (0, 0, 255)
 
-        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
+        self.update_bounding_box()
         pygame.draw.rect(window, self.color, self.bounding_box, 2)
 
         # draw HP bar above player
@@ -200,6 +202,9 @@ class Enemy:
         self.left = False
         self.right = True
         self.walkCount = 0
+        
+    def update_bounding_box(self):
+        self.bounding_box = (self.x + 10, self.y, 50, 60)
 
     def draw(self, window):
         # automatically move the enemy
@@ -232,7 +237,7 @@ class Enemy:
         else:
             self.color = (0, 0, 255)
 
-        self.bounding_box = (self.x + 10, self.y, 50, 60)
+        self.update_bounding_box()
         pygame.draw.rect(window, self.color, self.bounding_box, 2)
 
         # draw HP bar above enemy
@@ -292,7 +297,7 @@ class Enemy:
 
             distance = int(0.20 * self.jumpCount ** 2 * up)  # constant is jump height / num of frames
             self.y -= distance
-            self.bounding_box = (self.x + 10, self.y, 50, 60)
+            self.update_bounding_box()
             if self.jumpCount < 0:
                 box_distance = []
                 for box in Obstruction.boxes:
@@ -307,7 +312,7 @@ class Enemy:
                 if len(box_distance2) != 0:
                     self.y += distance
                     self.y += min(box_distance2)
-                    self.bounding_box = (self.x + 10, self.y, 50, 60)
+                    self.update_bounding_box()
                     self.isJump = False
                     self.jumpCount = self.jumpCount0
             self.jumpCount -= 1
@@ -359,6 +364,9 @@ class Obstruction:
         # to code animation
         self.moveCount0 = 15
         self.moveCount = self.moveCount0
+        
+    def update_bounding_box(self):
+        self.bounding_box = (self.x, self.y, self.width, self.height)
 
     def draw(self, window):
         pygame.draw.rect(window, self.color, self.bounding_box, 0)
@@ -554,9 +562,9 @@ while run:
         cloud.check_position(player)
         if cloud.rel_pos == 0:
             player.y -= distance
-            player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
+            player.update_bounding_box()
         cloud.y -= distance
-        cloud.bounding_box = (cloud.x, cloud.y, cloud.width, cloud.height)
+        cloud.update_bounding_box()
         cloud.moveCount -= delta
         
     
@@ -595,7 +603,7 @@ while run:
 
         distance = int(0.20 * player.jumpCount ** 2 * up)  # constant is jump height / num of frames
         player.y -= distance
-        player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
+        player.update_bounding_box()
         if player.jumpCount < 0:
             box_distance = []
             for box in Obstruction.boxes:
@@ -610,7 +618,7 @@ while run:
             if len(box_distance2) != 0:
                 player.y += distance
                 player.y += min(box_distance2)
-                player.bounding_box = (player.x + 12, player.y + 12, 40, 55)
+                player.update_bounding_box()
                 player.isJump = False
                 player.jumpCount = player.jumpCount0
         player.jumpCount -= 1

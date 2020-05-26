@@ -1,4 +1,3 @@
-# change all the codes to first check if there's enemy using len(Enemy.enemies)==0
 # code AI to control enemies
 
 # make MP bar and charge bar
@@ -6,7 +5,7 @@
 
 # code drop item and item interaction
 
-# create stage selection page
+# revamp restart button!!!
 # create volume button
 # fix restart button
 
@@ -18,27 +17,6 @@ import numpy as np
 pygame.mixer.pre_init(frequency=22050, size=-16, channels=2, buffer=512, devicename=None)
 pygame.init()
 
-# check if current working directory contains required images
-try:
-    # %matplotlib inline
-    import matplotlib.pyplot as plt
-    import os
-
-    print("current working directory: ", os.getcwd())
-    img = plt.imread('R1.png')
-    # plt.imshow(img)
-    # plt.imshow(img[15:40, 15:45, 0:4])
-    # print(img)
-except OSError:
-    # change current working directory to folder containing all images
-    if os.path.exists("/Users/JoachimWHY/PycharmProjects/TestProjects/PyGame Tutorial"):
-        os.chdir("/Users/JoachimWHY/PycharmProjects/TestProjects/PyGame Tutorial")
-    print("current working directory: ", os.getcwd())
-    img = plt.imread('R1.png')
-    # else use ('PyGame Tutorial/R1.png') or (os.path.join('PyGame Tutorial', 'R1.png'))
-finally:
-    del img
-
 # load music file and play
 pygame.mixer.music.set_volume(0.1)
 pygame.mixer.music.load('music.mp3')
@@ -49,6 +27,8 @@ bullet_sound = pygame.mixer.Sound('bullet.wav')
 bullet_sound.set_volume(0.1)
 hit_sound = pygame.mixer.Sound('hit.wav')
 hit_sound.set_volume(0.1)
+restore_sound = pygame.mixer.Sound('restore.wav')
+restore_sound.set_volume(0.1)
 
 # load background image from current working directory
 bg = pygame.image.load('bg.jpg')
@@ -74,14 +54,14 @@ class Player:
                 pygame.image.load('L9.png')]
     standing = pygame.image.load('standing.png')
 
-    def __init__(self, x=50, y=200, width=64, height=64):
+    def __init__(self, x=30, y=180, width=64, height=64):
         # define the Player character
         self.x = x  # starting point x-coordinate
         self.y = y  # starting point y-coordinate
         self.width = width
         self.height = height
         self.vel = 6
-        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
+        self.bounding_box = (self.x + 12, self.y + 12, 40, 50)
         self.color = (0, 0, 255)
         self.hit = False
         self.delayCount = 0
@@ -101,9 +81,9 @@ class Player:
         self.left = False
         self.right = False
         self.walkCount = 0
-    
+
     def update_bounding_box(self):
-        self.bounding_box = (self.x + 12, self.y + 12, 40, 55)
+        self.bounding_box = (self.x + 12, self.y + 12, 40, 50)
 
     def draw(self, window):
         # use same image for 3 frames, then reset to first image
@@ -184,7 +164,7 @@ class Enemy:
         self.width = width
         self.height = height
         self.vel = 3
-        self.bounding_box = (self.x + 10, self.y, 50, 60)
+        self.bounding_box = (self.x + 10, self.y, 50, 58)
         self.color = (0, 0, 255)
         self.hit = False
         self.delayCount = 0
@@ -202,9 +182,9 @@ class Enemy:
         self.left = False
         self.right = True
         self.walkCount = 0
-        
+
     def update_bounding_box(self):
-        self.bounding_box = (self.x + 10, self.y, 50, 60)
+        self.bounding_box = (self.x + 10, self.y, 50, 58)
 
     def draw(self, window):
         # automatically move the enemy
@@ -254,7 +234,7 @@ class Enemy:
 
         # to be replaced with AI that will decide enemy.ctrl
         if self.HP > 0:
-            if self.walkCount//np.random.randint(1, 3) == 0:  # randomly jump
+            if self.walkCount // np.random.randint(1, 3) == 0:  # randomly jump
                 self.ctrl["up"] = True
             if self.left:
                 if self.x - self.vel >= 0:
@@ -319,7 +299,7 @@ class Enemy:
 
     def hit_action(self):
         if self.hit is False and self.HP >= 0:
-            self.HP -= 20
+            self.HP -= 25
             hit_sound.play()
             self.hit = True
             self.delayCount = 1
@@ -328,7 +308,7 @@ class Enemy:
 class Projectile:
     bullets = []
 
-    def __init__(self, x, y, facing, radius=5, color=(255, 0, 0)):
+    def __init__(self, x, y, facing, radius=5, color=(185, 0, 0)):
         self.x = x
         self.y = y
         self.radius = radius
@@ -360,11 +340,11 @@ class Obstruction:
         self.boxes.append(self)
         self.rel_pos = 0  # relative position
         self.transparent = transparent
-        
+
         # to code animation
         self.moveCount0 = 15
         self.moveCount = self.moveCount0
-        
+
     def update_bounding_box(self):
         self.bounding_box = (self.x, self.y, self.width, self.height)
 
@@ -384,142 +364,219 @@ class Obstruction:
             self.rel_pos = 0  # player is standing on this box
 
 
+class Button:
+    buttons = []
+
+    def __init__(self, x, y, text, font_size=20, font='arial', color=(180, 50, 0), transparent=True):
+        self.x = x
+        self.y = y
+        self.text = text
+        self.font_size = font_size
+        self.font = font
+        self.color = color
+        font = pygame.font.SysFont(self.font, self.font_size)
+        text = font.render(self.text, True, self.color)
+        self.width = int(text.get_width() + 4)
+        self.height = int(text.get_height() + 4)
+        self.bounding_box = (self.x, self.y, self.width, self.height)
+        self.buttons.append(self)
+        self.transparent = transparent
+        self.bg_color = (255, 255, 255)
+        self.border_color = color
+        self.border_width = 2
+
+    def update_bounding_box(self):
+        self.bounding_box = (self.x, self.y, self.width, self.height)
+
+    def draw(self, window):
+        if not self.transparent:
+            pygame.draw.rect(window, self.bg_color, self.bounding_box)
+        pygame.draw.rect(window, self.border_color, self.bounding_box, self.border_width)
+        font = pygame.font.SysFont(self.font, self.font_size)
+        text = font.render(self.text, True, self.color)
+        window.blit(text, [self.x+2, self.y+2])
+
+    def check_collision(self):
+        if self.x <= mouse_position[0] <= self.x + self.width and self.y <= mouse_position[1] <= self.y + self.height:
+            self.transparent = False
+            return True
+        else:
+            self.transparent = True
+
+
 class Target:
     targets = []
-    
+
     def __init__(self, x, y, radius=5, color=(255, 0, 0)):
         self.x = x
         self.y = y
         self.radius = radius
-        self.bounding_box = (self.x-self.radius, self.y-self.radius, 2*self.radius, 2*self.radius)
+        self.bounding_box = (self.x - self.radius, self.y - self.radius, 2 * self.radius, 2 * self.radius)
         self.color = color
         self.targets.append(self)
-        
+
     def draw(self, window):
         pygame.draw.circle(window, self.color, [int(self.x), int(self.y)], self.radius)
 
 
 def redraw_game_window():
     window.blit(bg, [0, 0])  # set background to image from [0, 0] position
-    
+
     for box in Obstruction.boxes[1:]:  # draw boxes except ground
         if not box.transparent:
             box.draw(window)
-    
+
     player.draw(window)  # draw player
-    
+
     for enemy in Enemy.enemies:
-        enemy.draw(window)  # draw enemy
-    
+        enemy.draw(window)  # draw enemies
+
     for bullet in Projectile.bullets:  # draw bullets
         bullet.draw(window)
-        
+
     for target in Target.targets:  # draw target
         target.draw(window)
-    
-    font = pygame.font.SysFont(None, 30)  # create object with font style and font size
+
+    for button in Button.buttons:  # draw buttons
+        button.draw(window)
+
+    font = pygame.font.SysFont('arial', 20)  # create object with font style and font size
     text = font.render(str(mouse_position), True, (0, 0, 0))
     window.blit(text, [surf_width - text.get_width() - 5, surf_height - text.get_height() - 5])
     text = font.render("Score = " + str(player.score), True, (0, 0, 0))
     window.blit(text, [5, 5])
     text = font.render(str(timer), True, (0, 0, 0))
-    window.blit(text, [int(surf_width/2 - text.get_width()/2), 5])
-    text = font.render("Restart", True, (180, 50, 0))
-    pygame.draw.rect(window, (180, 50, 0), (restart_button.x - 2, restart_button.y - 2,
-                                            restart_button.width + 4, restart_button.height + 4), 2)
-    window.blit(text, [restart_button.x, restart_button.y])
-    
+    window.blit(text, [int(surf_width / 2 - text.get_width() / 2), 5])
+
     pygame.draw.circle(window, (255, 0, 0), mouse_position, 2)  # draw mouse position
-    
+
     if game_over:  # print this if game over
         pygame.draw.rect(window, (255, 255, 255), (80, 80, surf_width - 160, surf_height - 160))
         pygame.draw.rect(window, (0, 0, 0), (80, 80, surf_width - 160, surf_height - 160), 10)
-        font = pygame.font.SysFont(None, 30)
-        instruction = ["Intruction:",
-                       "1. You lose health if get hit by enemies.",
-                       "2. You kill enemy by shooting them.",
+        font = pygame.font.SysFont('arial', 20)
+        instruction = ["Instruction:",
+                       "1. Hit 'left' or 'right' to move, 'up' to jump.",
+                       "2. Hit 'space' to shoot and kill enemies.",
                        "3. Killing enemies will spawn new ones, and you gain +1 score.",
-                       "4. Grab the big red dot to earn score too.",
+                       "4. Grab the red dot to recover health.",
                        "5. Game ends when timer counts down to 0, or player dies.",
-                       "6. Click on 'Restart' to start playing!"]
+                       "6. Click on 'Field #' to start a new game!"]
         text = []
         for line in instruction:
             text.append(font.render(line, True, (0, 0, 0)))
         for line in range(len(text)):
-            window.blit(text[line], [90, 90 + line*int(text[line].get_height())])
-        font = pygame.font.SysFont(None, 100)
+            window.blit(text[line], [90, 90 + line * int(text[line].get_height())])
+        font = pygame.font.SysFont('arial', 100)
         text = font.render("Score = " + str(player.score), True, (0, 0, 0))
-        window.blit(text, [int(surf_width/2 - text.get_width()/2), int(surf_height/2) + 20])
-    
+        window.blit(text, [int(surf_width / 2 - text.get_width() / 2), int(surf_height / 2) + 20])
+
     pygame.display.update()
 
 
 def init_main():
     Projectile.bullets = []
     Enemy.enemies = []
-    
+    Obstruction.boxes[1:] = []  # pop everything except for ground
+
     start_time = pygame.time.get_ticks()  # initialize start time
-    
+
+    # define field obstructions
+    if field == 1:  # JW's field
+        # Obstruction(160, 70, 150, 20, color=(215, 215, 230))  # cloud 1
+        cloud = Obstruction(320, 140, 90, 20, color=(255, 0, 255))  # cloud 2
+        Obstruction(170, 180, 20, 235, color=(255, 125, 40))  # big tree trunk 2
+        Obstruction(100, 180, 150, 50, color=(110, 200, 60))  # big tree leaves 2
+        Obstruction(355, 235, 20, 180, color=(255, 125, 40))  # small tree trunk 1
+        Obstruction(330, 235, 80, 20, color=(0, 175, 0))  # small tree leaves 1
+        Obstruction(290, 255, 140, 20, color=(0, 150, 50))  # small tree leaves 2
+        Obstruction(270, 275, 180, 20, color=(0, 120, 40))  # small tree leaves 3
+        Obstruction(210, 345, 20, 70, color=(255, 125, 40))  # small tree trunk 4
+        Obstruction(160, 345, 130, 35, color=(90, 150, 0))  # small tree leaves 4
+        Obstruction(0, 110, 75, 305, color=(250, 220, 185))  # rock 0 left
+        Obstruction(770, 170, 80, 245, color=(250, 220, 185))  # rock 0 right
+        Obstruction(550, 230, 240, 185, color=(230, 200, 165))  # rock 1
+        Obstruction(490, 300, 130, 115, color=(185, 120, 90))  # rock 2
+        Obstruction(660, 100, 20, 315, color=(255, 125, 40))  # big tree trunk 2
+        Obstruction(600, 100, 150, 80, color=(144, 238, 144))  # big tree leaves 1
+        Obstruction(570, 360, 200, 55, color=(70, 70, 50))  # rock 3
+
+    if field == 2:  # JunLi's field
+        Obstruction(0, 350, 150, 10)  # level 1
+        Obstruction(250, 350, 350, 10)  # level 1
+        Obstruction(700, 350, 150, 10)  # level 1
+        Obstruction(100, 290, 350, 10)  # level 2
+        Obstruction(550, 290, 200, 10)  # level 2
+        Obstruction(0, 230, 330, 10)  # level 3
+        Obstruction(430, 230, 220, 10)  # level 3
+        Obstruction(750, 230, 100, 10)  # level 3
+        Obstruction(0, 170, 150, 10)  # level 4
+        Obstruction(250, 170, 250, 10)  # level 4
+        Obstruction(600, 170, 150, 10)  # level 4
+        Obstruction(150, 110, 550, 10)  # level 5
+        Obstruction(440, 180, 50, 50, (130, 0, 20))  # box 1
+        Obstruction(380, 360, 55, 55, (130, 0, 20))  # box 2
+
+    if field == 3:  # JunLi's revamped field
+        Obstruction(320, 360, 55, 55, (130, 0, 20))  # box
+
+        Obstruction(100, 220, 10, 195, color=(0, 80, 150))  # small building pole 1
+        Obstruction(170, 220, 10, 195, color=(0, 80, 150))  # small building pole 2
+        Obstruction(240, 220, 10, 195, color=(0, 80, 150))  # small building pole 3
+        Obstruction(100, 350, 150, 10, color=(0, 80, 150))  # small building level 1
+        Obstruction(100, 285, 150, 10, color=(0, 80, 150))  # small building level 2
+        Obstruction(100, 220, 150, 25, color=(0, 80, 150))  # small building level 3
+
+        Obstruction(300, 120, 10, 295, color=(70, 70, 70))  # big building pole 1
+        Obstruction(400, 120, 10, 295, color=(70, 70, 70))  # big building pole 2
+        Obstruction(500, 120, 10, 295, color=(70, 70, 70))  # big building pole 3
+        Obstruction(600, 120, 10, 295, color=(70, 70, 70))  # big building pole 4
+        Obstruction(300, 315, 310, 10, color=(70, 70, 70))  # big building level 1
+        Obstruction(300, 250, 310, 10, color=(70, 70, 70))  # big building level 2
+        Obstruction(300, 185, 310, 10, color=(70, 70, 70))  # big building level 3
+        Obstruction(300, 120, 310, 25, color=(70, 70, 70))  # big building level 4
+
+        Obstruction(700, 90, 5, 325, color=(255, 200, 0))  # crane left pole
+        Obstruction(750, 90, 5, 325, color=(255, 200, 0))  # crane right pole
+        Obstruction(520, 390, 330, 25, color=(0, 0, 0))  # crane base
+        Obstruction(580, 350, 270, 40, color=(128, 128, 128))  # crane level 1
+        Obstruction(700, 285, 55, 5, color=(255, 200, 0))  # crane level 2
+        Obstruction(700, 220, 55, 5, color=(255, 200, 0))  # crane level 3
+        Obstruction(700, 155, 55, 5, color=(255, 200, 0))  # crane level 4
+        Obstruction(180, 90, 5, 65, color=(170, 170, 170))  # crane wire
+        Obstruction(180, 90, 590, 20, color=(255, 200, 0))  # crane boom
+        Obstruction(133, 155, 100, 5, color=(170, 170, 170))  # crane load
+
     player = Player()  # initialize player
     for i in range(n_enemies):  # initialize enemy
-        Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height/2), ground.y - 64))
-    
-    return player, start_time
+        Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height / 2), ground.y - 64))
+
+    if field == 1:
+        return player, start_time, cloud
+    else:
+        return player, start_time
 
 
-# define stage obstructions
-field = 1
-if field == 1:  # JW's field
-    ground = Obstruction(0, 415, surf_width, 30, transparent=True)
-    # Obstruction(160, 70, 150, 20, color=(215, 215, 230))  # cloud 1
-    cloud = Obstruction(320, 140, 90, 20, color=(255, 0, 255))  # cloud 2
-    Obstruction(170, 180, 20, 235, color=(255, 125, 40))  # big tree trunk 2
-    Obstruction(100, 180, 150, 50, color=(110, 200, 60))  # big tree leaves 2
-    Obstruction(355, 235, 20, 180, color=(255, 125, 40))  # small tree trunk 1
-    Obstruction(330, 235, 80, 20, color=(0, 175, 0))  # small tree leaves 1
-    Obstruction(290, 255, 140, 20, color=(0, 150, 50))  # small tree leaves 2
-    Obstruction(270, 275, 180, 20, color=(0, 120, 40))  # small tree leaves 3
-    Obstruction(210, 345, 20, 70, color=(255, 125, 40))  # small tree trunk 4
-    Obstruction(160, 345, 130, 35, color=(90, 150, 0))  # small tree leaves 4
-    Obstruction(0, 110, 75, 305, color=(250, 220, 185))  # rock 0 left
-    Obstruction(770, 170, 80, 245, color=(250, 220, 185))  # rock 0 right
-    Obstruction(550, 230, 240, 185, color=(230, 200, 165))  # rock 1
-    Obstruction(490, 300, 130, 115, color=(185, 120, 90))  # rock 2
-    Obstruction(660, 100, 20, 315, color=(255, 125, 40))  # big tree trunk 2
-    Obstruction(600, 100, 150, 80, color=(144, 238, 144))  # big tree leaves 1
-    Obstruction(570, 360, 200, 55, color=(70, 70, 50))  # rock 3
-
-if field == 2:  # JunLi's field
-    ground = Obstruction(0, 415, surf_width, 30, transparent=True)
-    Obstruction(0, 350, 150, 10)  # level 1
-    Obstruction(250, 350, 350, 10)  # level 1
-    Obstruction(700, 350, 150, 10)  # level 1
-    Obstruction(100, 290, 350, 10)  # level 2
-    Obstruction(550, 290, 200, 10)  # level 2
-    Obstruction(0, 230, 330, 10)  # level 3
-    Obstruction(430, 230, 220, 10)  # level 3
-    Obstruction(750, 230, 100, 10)  # level 3
-    Obstruction(0, 170, 150, 10)  # level 4
-    Obstruction(250, 170, 250, 10)  # level 4
-    Obstruction(600, 170, 150, 10)  # level 4
-    Obstruction(150, 110, 550, 10)  # level 5
-    Obstruction(440, 180, 50, 50, (130, 0, 20))  # box 1
-    Obstruction(380, 360, 55, 55, (130, 0, 20))  # box 2
-    
-
-# Obstruction(460, 35, 100, 5, (255, 255, 255))
-# Obstruction(610, 35, 30, 5, (255, 255, 255))
-
-target = Target(750, 35)
+# define ground before initializing other obstructions
+ground = Obstruction(0, 415, surf_width, 30, transparent=True)
+target = Target(x=np.random.randint(100, surf_width - 100), y=np.random.randint(100, surf_height - 100))
 
 # draw restart button
-font = pygame.font.SysFont(None, 30)  # create object with font style and font size
-text = font.render("Restart", True, (0, 0, 0))
-restart_button = Obstruction(5, surf_height-25, int(text.get_width()), int(text.get_height()), (0, 0, 0), True)
+font = pygame.font.SysFont('arial', 20)
+text = font.render('End', True, (0, 0, 0))
+restart_button = Button(5, surf_height - text.get_height() - 10, 'End')
 
-# initialize player, enemies, and start time
+# draw field buttons
+field1 = Button(restart_button.x + restart_button.width + 10, restart_button.y, 'Field 1', color=(0, 0, 200))
+field2 = Button(field1.x + field1.width + 10, restart_button.y, 'Field 2', color=(0, 0, 200))
+field3 = Button(field2.x + field2.width + 10, restart_button.y, 'Field 3', color=(0, 0, 200))
+
+# initialize player, enemies, field, and start time
 n_enemies = 1
-player, start_time = init_main()
+field = 1
+if field == 1:
+    player, start_time, cloud = init_main()
+else:
+    player, start_time = init_main()
 
 clock = pygame.time.Clock()
 timer = 120
@@ -527,28 +584,72 @@ game_over = True
 run = True
 while run:
     clock.tick(27)  # set frame per second to max 27 (9 images * 3 frame/image)
-    
+
     # define state of keyboard buttons
     keys = pygame.key.get_pressed()
 
     # define state of mouse buttons and position
     mouse_buttons = pygame.mouse.get_pressed()
     mouse_position = pygame.mouse.get_pos()
-    
-    if restart_button.x <= mouse_position[0] <= restart_button.x + restart_button.width:
-        if restart_button.y <= mouse_position[1] <= restart_button.y + restart_button.height:
-            if mouse_buttons[0]:
-                game_over = False
+
+    # attempt to code pause button, but timer can't stop
+    # if restart_button.check_collision():
+    #     pause = False
+    #     if mouse_buttons[0]:
+    #         pause = True
+    #         while pause:
+    #             keys = pygame.key.get_pressed()
+    #             for event in pygame.event.get():
+    #                 if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
+    #                     run = False
+    #                     pause = False
+    #             if keys[pygame.K_DOWN]:
+    #                 pause = False
+
+    if restart_button.check_collision():
+        if mouse_buttons[0]:
+            game_over = True
+            # if field == 1:
+            #     player, start_time, cloud = init_main()
+            # else:
+            #     player, start_time = init_main()
+
+    if field1.check_collision():
+        if mouse_buttons[0]:
+            game_over = False
+            field = 1
+            if field == 1:
+                player, start_time, cloud = init_main()
+            else:
                 player, start_time = init_main()
-    
+
+    if field2.check_collision():
+        if mouse_buttons[0]:
+            game_over = False
+            field = 2
+            if field == 1:
+                player, start_time, cloud = init_main()
+            else:
+                player, start_time = init_main()
+
+    if field3.check_collision():
+        if mouse_buttons[0]:
+            game_over = False
+            field = 3
+            if field == 1:
+                player, start_time, cloud = init_main()
+            else:
+                player, start_time = init_main()
+
     if not game_over:
-        timer = 120 - round((pygame.time.get_ticks() - start_time)/1000)  # define time past since init_main
-    
+        timer = 120 - round((pygame.time.get_ticks() - start_time) / 1000)  # define time past since init_main
+
     # define when to terminate loop, i.e. when click on CLOSE button (QUIT)
     for event in pygame.event.get():
         if event.type == pygame.QUIT or keys[pygame.K_ESCAPE]:
             run = False
-    
+
+    # floating block in field 1
     if field == 1:
         if cloud.moveCount == cloud.moveCount0:
             delta = 1
@@ -566,8 +667,7 @@ while run:
         cloud.y -= distance
         cloud.update_bounding_box()
         cloud.moveCount -= delta
-        
-    
+
     # define what key-presses do, e.g. change x and y starting point
     if not game_over:
         if keys[pygame.K_LEFT] and player.x - player.vel >= 0:
@@ -601,7 +701,7 @@ while run:
         else:  # player.jumpCount < 0
             up = -1
 
-        distance = int(0.20 * player.jumpCount ** 2 * up)  # constant is jump height / num of frames
+        distance = int(0.21 * player.jumpCount ** 2 * up)  # constant is jump height / num of frames
         player.y -= distance
         player.update_bounding_box()
         if player.jumpCount < 0:
@@ -644,7 +744,7 @@ while run:
                     Projectile.bullets.pop(Projectile.bullets.index(bullet))
                     enemy.hit_action()
                 elif 0 < bullet.x < surf_width:
-                    bullet.x += bullet.vel/len(Enemy.enemies)
+                    bullet.x += bullet.vel / len(Enemy.enemies)
                 else:
                     Projectile.bullets.pop(Projectile.bullets.index(bullet))
     else:
@@ -658,7 +758,7 @@ while run:
     for enemy in Enemy.enemies:
         if player.check_collision(enemy):
             player.hit_action()
-    
+
     # remove dead enemies and create new enemies
     for enemy in Enemy.enemies:
         if enemy.HP <= 0 and enemy.delayCount == 0:
@@ -666,19 +766,23 @@ while run:
             player.score += 1
             Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height / 3), ground.y - 64))
             Enemy(np.random.randint(200, surf_width - 64), np.random.randint(int(surf_height / 3), ground.y - 64))
-    
+
     # condition to game over: player die, or time's up
     if player.HP <= 0 or timer <= 0:
         game_over = True
-    
+
+    # check if player collides with target
     for target in Target.targets:
         if player.check_collision(target):
             Target.targets.pop(Target.targets.index(target))
-            player.score += 1
-            target = Target(x=np.random.randint(100, surf_width-100), y=np.random.randint(100, surf_height-100))
-    
+            if player.HP <= player.HP0:
+                player.HP += 30
+                restore_sound.play()
+                if player.HP > player.HP0:
+                    player.HP = player.HP0
+            target = Target(x=np.random.randint(100, surf_width - 100), y=np.random.randint(100, surf_height - 100))
+
     redraw_game_window()
-    
 
 pygame.display.quit()
 pygame.quit()
